@@ -1,0 +1,51 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  # Позволяет запускать сборку вручную через вкладку Actions на GitHub
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build CodeAssist Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Получение исходного кода репозитория
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Установка JDK 17 (требуется проектом) с кэшированием Gradle для ускорения
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      # 3. Настройка окружения Android SDK
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 4. Предоставление прав на выполнение для Gradle Wrapper
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 5. Сборка Debug APK (без подписи, готова для тестирования)
+      - name: Build Debug APK
+        run: ./gradlew :ide-android:assembleDebug --no-daemon
+
+      # 6. Загрузка собранного APK как артефакта GitHub Actions
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeAssist-Android-Debug
+          path: ide-android/build/outputs/apk/debug/*.apk
+          retention-days: 7 # Артефакт будет храниться 7 дней
